@@ -1,14 +1,35 @@
-const socketController = (socket) => {
-  console.info("Client connected ", socket.id);
+const TicketControl = require("../models/ticketcontrol");
 
-  socket.on("disconnect", () => {
-    console.info("Client disconnected ", socket.id);
+const ticketControl = new TicketControl();
+
+const socketController = (socket) => {
+  socket.emit("lastTicket", ticketControl.last);
+  socket.emit("currentState", ticketControl.last4);
+  socket.emit("ticketsPending", ticketControl.tickets.length)
+
+  socket.on("nextTicket", (_, callback) => {
+    const next = ticketControl.next();
+    callback(next);
+
+    socket.broadcast.emit("ticketsPending", ticketControl.tickets.length);
   });
 
-  socket.on("sendMessage", (payload, callback) => {
-    const id = 12345678;
-    callback({ id, date: new Date() });
-    socket.broadcast.emit("sendMessage", payload);
+  socket.on("attendTicket", ({ desktop }, callback) => {
+    if (!desktop) {
+      return callback({
+        ok: false,
+        message: "Please send a desktop"
+      });
+    }
+    const ticket = ticketControl.handleTicket(desktop);
+    socket.broadcast.emit("currentState", ticketControl.last4);
+    socket.broadcast.emit("ticketsPending", ticketControl.tickets.length);
+    socket.emit("ticketsPending", ticketControl.tickets.length);
+
+    callback({
+      ok: !!ticket,
+      ...(!!ticket ? { ticket } : { msg: "Has not pending tickets!" })
+    });
   });
 };
 

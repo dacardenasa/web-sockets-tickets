@@ -1,5 +1,5 @@
 {
-  "name": "07-web-sockets-server",
+  "name": "08-web-sockets-queues",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
